@@ -2,12 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-azlist *azlist_create(void)
+azlist *azlist_create(size_t size)
 {
 	azlist *list = malloc(sizeof(*list));
 	if (list == NULL)
 		return NULL;
 	list->head = NULL;
+	list->size = size;
 	list->length = 0;
 	return list;
 }
@@ -23,6 +24,7 @@ void azlist_delete(azlist *list)
 		free(list->head);
 	}
 	list->head = NULL;
+	list->size = 0;
 	list->length = 0;
 	free(list);
 }
@@ -32,16 +34,18 @@ size_t azlist_length(azlist *list)
 	return list->length;
 }
 
-int azlist_put(azlist *list, int pos, void *data, size_t size)
+void *azlist_put(azlist *list, int pos, void *data, void (*assign)(void *, void *))
 {
 	pos = pos < 0 ? list->length + pos : pos;
 	pos = pos > list->length ? list->length : pos;
 	aznode *node = malloc(sizeof(*node));
 	if (node == NULL)
-		return AZLIST_MALLOC_FAILED;
-	node->size = size;
-	node->data = malloc(node->size);
-	memcpy(node->data, data, node->size);
+		return NULL;
+	node->data = malloc(list->size);
+	if (assign == NULL)
+		memcpy(node->data, data, list->size);
+	else
+		assign(node->data, data);
 	if (pos == 0) {
 		node->next = list->head;
 		list->head = node;
@@ -53,19 +57,17 @@ int azlist_put(azlist *list, int pos, void *data, size_t size)
 		prev->next = node;
 	}
 	++(list->length);
-	return AZLIST_SUCCESS;
+	return node;
 }
 
-int azlist_del(azlist *list, int pos, void **data_ptr, size_t *size_ptr)
+void *azlist_del(azlist *list, int pos)
 {
 	pos = pos < 0 ? list->length + pos : pos;
 	if (pos >= list->length)
-		return AZLIST_WRONG_POSITION;
+		return NULL;
+	void *ptr = NULL;
 	if (pos == 0) {
-		if (data_ptr != NULL)
-			*data_ptr = list->head->data;
-		if (size_ptr != NULL)
-			*size_ptr = list->head->size;
+		ptr = list->head->data;
 		aznode *head = list->head;
 		list->head = head->next;
 		free(head);
@@ -73,44 +75,40 @@ int azlist_del(azlist *list, int pos, void **data_ptr, size_t *size_ptr)
 		aznode *prev = list->head;
 		for (size_t i = 0; i < pos - 1; ++i)
 			prev = prev->next;
-		if (data_ptr != NULL)
-			*data_ptr = prev->next->data;
-		else
-			free(prev->next->data);
-		if (size_ptr != NULL)
-			*size_ptr = prev->next->size;
+		ptr = prev->next->data;
 		aznode *next = prev->next;
 		prev->next = next->next;
 		free(next);
 	}
 	--(list->length);
-	return AZLIST_SUCCESS;
+	return ptr;
 }
 
-int azlist_set(azlist *list, int pos, void *data, size_t size)
+void *azlist_set(azlist *list, int pos, void *data, void (*assign)(void *, void *))
 {
 	pos = pos < 0 ? list->length + pos : pos;
 	if (pos >= list->length)
-		return AZLIST_WRONG_POSITION;
+		return NULL;
 	aznode *curr = list->head;
 	for (size_t i = 0; i < pos; ++i)
 		curr = curr->next;
-	curr->data = data;
-	curr->size = size;
-	return AZLIST_SUCCESS;
+	if (curr->data != NULL)
+		free(curr->data);
+	curr->data = malloc(list->size);
+	if (assign == NULL)
+		memcpy(curr->data, data, list->size);
+	else
+		assign(curr->data, data);
+	return curr;
 }
 
-int azlist_get(azlist *list, int pos, void **data_ptr, size_t *size_ptr)
+void *azlist_get(azlist *list, int pos)
 {
 	pos = pos < 0 ? list->length + pos : pos;
 	if (pos >= list->length)
-		return AZLIST_WRONG_POSITION;
+		return NULL;
 	aznode *curr = list->head;
 	for (size_t i = 0; i < pos; ++i)
 		curr = curr->next;
-	if (data_ptr != NULL)
-		*data_ptr = curr->data;
-	if (size_ptr != NULL)
-		*size_ptr = curr->size;
-	return AZLIST_SUCCESS;
+	return curr->data;
 }
