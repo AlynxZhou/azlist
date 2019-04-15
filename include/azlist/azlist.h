@@ -20,9 +20,9 @@ struct azlist {
 azlist *azlist_create(void);
 void azlist_delete(azlist *list);
 size_t azlist_length(azlist *list);
-int azlist_put(azlist *list, size_t pos, void *data, size_t size);
-int azlist_del(azlist *list, size_t pos, void **data_ptr, size_t *size_ptr);
-int azlist_set(azlist *list, size_t pos, void *data, size_t size);
-int azlist_get(azlist *list, size_t pos, void **data_ptr, size_t *size_ptr);
+int azlist_put(azlist *list, int pos, void *data, size_t size);
+int azlist_del(azlist *list, int pos, void **data_ptr, size_t *size_ptr);
+int azlist_set(azlist *list, int pos, void *data, size_t size);
+int azlist_get(azlist *list, int pos, void **data_ptr, size_t *size_ptr);
 
 #endif
