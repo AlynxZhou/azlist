@@ -1,5 +1,6 @@
 #include "azlist/azlist.h"
 #include <stdlib.h>
+#include <string.h>
 
 azlist *azlist_create(void)
 {
@@ -38,8 +39,9 @@ int azlist_put(azlist *list, int pos, void *data, size_t size)
 	aznode *node = malloc(sizeof(*node));
 	if (node == NULL)
 		return AZLIST_MALLOC_FAILED;
-	node->data = data;
 	node->size = size;
+	node->data = malloc(node->size);
+	memcpy(node->data, data, node->size);
 	if (pos == 0) {
 		node->next = list->head;
 		list->head = node;
@@ -73,6 +75,8 @@ int azlist_del(azlist *list, int pos, void **data_ptr, size_t *size_ptr)
 			prev = prev->next;
 		if (data_ptr != NULL)
 			*data_ptr = prev->next->data;
+		else
+			free(prev->next->data);
 		if (size_ptr != NULL)
 			*size_ptr = prev->next->size;
 		aznode *next = prev->next;
